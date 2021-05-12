@@ -108,38 +108,6 @@ update:
 rout_end_ptr:
 rout endp
 
-outputAL proc
-	push ax
-	push bx
-	push cx
-	mov ah,09h
-	mov bh,0
-	mov cx,1
-	int 10h
-	pop cx
-	pop bx
-	pop ax
-	ret
-outputAL endp
-
-outputBP proc
-	push ax
-	push bx
-	push dx
-	push cx
-	mov ah,13h
-	mov al,1
-	mov bh,0
-	mov dh,22
-	mov dl,0
-	int 10h
-	pop cx
-	pop dx
-	pop bx
-	pop ax
-	ret
-outputBP endp
-
 setCurs proc
 	mov ah,02h
 	mov bh,0
