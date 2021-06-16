@@ -1,17 +1,18 @@
 stack_ segment stack
-	dw 128 dup(?)
+	dw 256 dup(?)
 stack_ ends
 
 data_ segment
-	overlay_size_data db 64 dup(0),'$'
-	file_path dw 64 dup(0)
+	overlay_size_data db 43 dup(0),'$'
+	file_path dw 50 dup(0)
 	file_name dw 0
-	overlay_name1 db 'overlay1.ovl',0
-	overlay_name2 db 'overlay2.ovl',0
+	overlay_name1 db 'OVL1.OVL',0
+	overlay_name2 db 'OVL2.OVL',0
 	overlay_ptr dd 0
+	keep_psp dw 0
 	
 	exit_code db 'Program finished with code: $'
-	error_1 db 'non-existent function'
+	error_1 db 'non-existent function',0dh,0ah,'$'
 	error_2 db 'file not found',0dh,0ah,'$'
 	error_3 db 'path not found',0dh,0ah,'$'
 	error_4 db 'many files are open',0dh,0ah,'$'
@@ -19,6 +20,11 @@ data_ segment
 	error_8 db 'not enough memory',0dh,0ah,'$'
 	error_10 db 'wrong environment',0dh,0ah,'$'
 	error_free_memory db 'fail free memory',0dh,0ah,'$'
+	
+	exec_parameter_block dw 0
+						 db 0
+						 db 0
+						 db 0
 data_ ends
 
 code_ segment
@@ -31,6 +37,24 @@ print proc near
 	pop ax
 	ret
 print endp
+
+word_to_hex proc near
+	push bx
+	mov bh,ah
+	call byte_to_hex
+	mov [di],ah
+	dec di
+	mov [di],al
+	dec di
+	mov al,bh
+	xor ah,ah
+	call byte_to_hex
+	mov [di],ah
+	dec di
+	mov [di],al
+	pop bx
+	ret
+word_to_hex endp
 
 byte_to_hex proc near
 	push cx
@@ -54,22 +78,24 @@ next:
 	ret
 tetr_to_hex endp
 
-free_memory proc near
-	mov ax,es
+free_memory proc far
 	mov bx,offset main_end_prt
+	mov ax,es
 	sub bx,ax
-	add bx,100h
+	add bx,950h
 	mov ah,4ah
 	int 21h
 	jc free_memory_error
 	ret
 free_memory_error:
+	push dx
 	mov dx,offset error_free_memory
 	call print
+	pop dx
 	ret
 free_memory endp
 
-find_path proc near
+find_path proc
 	push ax
 	push bx
 	push cx 
@@ -82,7 +108,7 @@ find_path proc near
 	
 	mov es,es:[2ch]
 	mov bx,0
-	xor si,si
+
 loop_:
 	cmp byte ptr es:[bx],00h
 	jne next_byte
@@ -95,11 +121,8 @@ loop_:
 
 path_found:
 	add bx,4
+	xor si, si
 	lea di,file_path
-	push dx
-	mov dx,offset file_name
-	call print
-	pop dx
 
 read:
 	mov dl,es:[bx+si]
@@ -113,7 +136,7 @@ read:
 insert_file_name:
 	sub di,8
 	mov cx,8
-	lea si,file_name
+	mov si,file_name
 	copy:
 		mov al,[si]
 		mov [di],al
@@ -154,10 +177,12 @@ overlay_size proc near
 	mov ax,[di+1ch]
 	pop di
 	
+	push cx
 	mov cl,4
 	shr bx,cl
 	mov cl,12
 	shl ax,cl
+	pop cx
 	
 	add bx,ax
 	add bx,1
@@ -261,6 +286,7 @@ overlay_execute endp
 main proc far
 	mov ax,data_
 	mov ds,ax
+	mov keep_psp,es
 	
 	call free_memory
 	
@@ -274,10 +300,10 @@ main proc far
 	call overlay_size
 	call overlay_execute
 	
+	xor al,al
 	mov ah,4ch
 	int 21h
-main_end_prt:
 main endp
-
+main_end_prt:
 code_ ends
-end main 
+end main

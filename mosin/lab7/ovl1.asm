@@ -1,17 +1,24 @@
-code_ segment
-	assume cs:code_
-
-address db 'overlay1 address:          ',0dh,0ah,'$'
+ovl_code_ segment
+	assume cs:ovl_code_, ds:nothing, es:nothing, ss:nothing
 
 overlay proc far
+	push ax
+	push dx
+	push di
+	push ds
 	mov ax,cs
 	mov ds,ax
-	mov bx,offset address+16
+	mov bx,offset address
+	add bx,21
 	mov di,bx
 	mov ax,cs
 	call wrd_to_hex
 	mov dx,offset address
 	call print
+	pop ds
+	pop di
+	pop dx
+	pop ax
 	retf
 overlay endp
 
@@ -63,5 +70,7 @@ print proc near
 	ret
 print endp
 
-code_ ends
+address db 'overlay1 address:          ',0dh,0ah,'$'
+
+ovl_code_ ends
 end
